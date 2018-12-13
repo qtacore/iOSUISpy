@@ -1,0 +1,15 @@
+# python编译文件
+*.pyc
+# eclipse生成的备份文件
+*.bak
+# 打包自动生成的目录
+build/
+dist/
+# 日志文件
+*.log
+# 调试目录
+debug/
+# Mac系统自动生成的文件
+*.DS_Store
+# virtual python环境，用于安装pyinstaller工具
+venv/
