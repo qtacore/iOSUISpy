@@ -11,7 +11,15 @@ iOSUISpy is a UI Tool for [QT4i](https://github.com/tencent/qt4i) to inspect QPa
  
 ## Get Started
 
-### How to run from iOSUISpy project
+### How to install iOSUISpy
+
+- Download [iOSUISpy Release Version](https://github.com/qtacore/iOSUISpy/releases) with the suffix ".zip" 
+  and unzip it on MacOS system.
+- Move UISpy app to " /Applications" directory and open it for use.
+
+### How to debug iOSUISpy project
+
+#### Debug with iOSUISpy source
 
 - Make sure that you are in Python 2.7 environment on MacOS system
 
@@ -22,9 +30,9 @@ iOSUISpy is a UI Tool for [QT4i](https://github.com/tencent/qt4i) to inspect QPa
     
 - Select 'ui/app.py' file and run 
  
-### How to build iOSUISpy Release Tool
+#### Build iOSUISpy Release version
 
-Run command line  in Terminal in iOSUISpy project root directory
+Run command line  in Terminal in iOSUISpy project root directory, and the executable app will appear in the directory of "dist".
 ```shell
 $ pyinstaller --windowed  --clean --noconfirm  --onedir uispy.spec
 ```
