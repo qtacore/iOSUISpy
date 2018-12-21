@@ -13,8 +13,7 @@ iOSUISpy is a UI Tool for [QT4i](https://github.com/tencent/qt4i) to inspect QPa
 
 ### How to install iOSUISpy
 
-- Download [iOSUISpy Release Version](https://github.com/qtacore/iOSUISpy/releases) with the suffix ".zip" 
-  and unzip it on MacOS system.
+- Download [iOSUISpy Release Version](https://github.com/qtacore/iOSUISpy/releases) with the suffix ".dmg".
 - Move UISpy app to " /Applications" directory and open it for use.
 
 ### How to debug iOSUISpy project
