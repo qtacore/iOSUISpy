@@ -14,7 +14,17 @@ iOSUISpy is a UI Tool for [QT4i](https://github.com/tencent/qt4i) to inspect QPa
 ### How to install iOSUISpy
 
 - Download [iOSUISpy Release Version](https://github.com/qtacore/iOSUISpy/releases) with the suffix ".dmg".
-- Move UISpy app to " /Applications" directory and open it for use.
+- Move UISpy app to " /Applications" directory.
+
+### How to use iOSUISpy
+
+- inspect QPath of iOS controls for iOS App
+  - Open iOSUISpy by click icon of iOSUISpy. 
+  - Click "连接" button and wait until device is connected.
+  - Select ios device and select ios app by bundle id.
+  - Click "启动App" button and wait until sceenshot and ui tree of app appear.
+  - Operate app to specified page and click "获取控件" button, and repeat this step for inspecting QPath.
+
 
 ### How to debug iOSUISpy project
 
