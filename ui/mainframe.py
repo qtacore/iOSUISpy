@@ -88,8 +88,10 @@ class MainFrame(wx.Frame):
         advance_menu = wx.Menu()
         log_menu = advance_menu.Append(wx.ID_ANY, u"查看日志", u"打开日志文件夹")
         debug_menu = advance_menu.Append(wx.ID_ANY, u"Debug模式", u"使用Debug模式运行UISpy")
+        setting_menu = advance_menu.Append(wx.ID_ANY, u"设置", u"环境参数设置")
         self.show_qpath_menu = advance_menu.Append(wx.ID_ANY, u'显示QPath', u"打开即可显示控件Qpath",kind=wx.ITEM_CHECK)
         self.remote_operator_menu = advance_menu.Append(wx.ID_ANY, u'远程控制', u"打开即可远程控制手机",kind=wx.ITEM_CHECK)
+
         advance_menu.AppendSeparator()
         menu_bar.Append(advance_menu, u'高级')
         
@@ -97,6 +99,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_uninstall, uninstall_menu)
         self.Bind(wx.EVT_MENU, self.on_log, log_menu)
         self.Bind(wx.EVT_MENU, self.on_debug, debug_menu)
+        self.Bind(wx.EVT_MENU, self.on_settings, setting_menu)
         self.Bind(wx.EVT_MENU, self.on_sandbox_view, sandbox_menu)
         self.SetMenuBar(menu_bar)
         
@@ -141,7 +144,6 @@ class MainFrame(wx.Frame):
         else:
             with open(self._config_file_path, 'w+') as fd:
                 config_parser = ConfigParser.ConfigParser()
-                config_parser.read(self._config_file_path)
                 config_parser.add_section('uispy')
                 config_parser.write(fd)
             bunlde_id = DEFAULT_BUNDLE_ID
@@ -310,9 +312,13 @@ class MainFrame(wx.Frame):
         self._host_driver = HostDriver(host_ip, host_port)
         if not self._host_driver.connect_to_host(self._driver_type):
             self.statusbar.SetStatusText(u"连接设备主机异常！", 0)
-            from rpc.driver import QT4I_MANAGE
-            if not os.path.exists(QT4I_MANAGE):
-                self.create_tip_dialog(u"请使用pip安装qt4i库:\npip install qt4i --user")
+            config_parser = ConfigParser.ConfigParser()
+            config_parser.read(os.path.join(RESOURCE_PATH, 'uispy.conf'))
+            qt4i_manage = config_parser.get('uispy', 'qt4i-manage')
+            if not os.path.exists(qt4i_manage):
+                self.create_tip_dialog(u"请检查qt4i是否安装或者qt4i-manage路径是否配置正确！\n"
+                                       u"1.qt4i安装方法:pip install qt4i --user\n"
+                                       u"2.qt4i-manage配置方法:高级->设置")
             else:
                 self.create_tip_dialog(u"连接设备主机异常，请检查设备主机地址")
             return
@@ -781,12 +787,16 @@ class MainFrame(wx.Frame):
         if current_path.endswith('ui'):
             wx.MessageBox('本模式下不支持')
         else:
-#             self.on_close(event)
             self.Close(force=True)
             wx.Exit()
             cmd = 'open %s' % debug_path
             subprocess.call(cmd,shell=True)
-    
+
+    def on_settings(self, event):
+        setting_dlg = Settings(self._config_file_path, None, title=u'环境参数设置')
+        setting_dlg.ShowModal()
+        setting_dlg.Destroy()
+
     def on_sandbox_view(self, event):
         '''
         查看沙盒的目录结构
@@ -865,7 +875,8 @@ class TreeNodePopupMenu(wx.Menu):
             safari.open('', new=0, autoraise=True)
         else:
             self._parent.create_tip_dialog(u'WebInspector仅支持MacOS系统下Safari浏览器')
-            
+
+
 class MyProgressDialog(wx.ProgressDialog):
     '''
     弹出显示框可更新内容显示
@@ -898,6 +909,7 @@ class MyProgressDialog(wx.ProgressDialog):
                 break
         self.on_close()
 
+
 class FileDropTarget(wx.FileDropTarget):  
     def __init__(self, frame_window, target):  
         wx.FileDropTarget.__init__(self)
@@ -917,4 +929,69 @@ class FileDropTarget(wx.FileDropTarget):
                 self.frame_window._run_in_work_thread(self.frame_window.on_install, path)
             else:
                 self.frame_window.create_tip_dialog(u'%s格式不符合，请选择.ipa(真机)或者.zip(模拟器)类型安装包' % basename)
-        return filepath == None
+        return filepath is None
+
+
+class Settings(wx.Dialog):
+    '''设置系统参数
+    '''
+
+    def __init__(self, settings_file, *args, **kw):
+        super(Settings, self).__init__(*args, **kw)
+        self._settings_file = settings_file
+        self._settings = {}
+        self._load_settings()
+        self._init_dialog()
+
+    def _load_settings(self):
+        config_parser = ConfigParser.ConfigParser()
+        config_parser.read(self._settings_file)
+        try:
+            qt4i_manage_path = config_parser.get('uispy', 'qt4i-manage')
+        except ConfigParser.NoOptionError:
+            qt4i_manage_path = os.path.expanduser("~/Library/Python/2.7/bin/qt4i-manage")
+        self._settings['qt4i-manage'] = qt4i_manage_path
+
+    def _init_dialog(self):
+
+        vertical_box = wx.BoxSizer(wx.VERTICAL)
+
+        row_box = wx.BoxSizer(wx.HORIZONTAL)
+
+        label = wx.StaticText(self, -1, "qt4i-manage:")
+        row_box.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
+
+        self.tc_qt4i_manage = wx.TextCtrl(self, -1, "", size=(400, -1))
+        self.tc_qt4i_manage.SetToolTip(u"qt4i-manage的安装路径")
+        row_box.Add(self.tc_qt4i_manage, 1, wx.ALIGN_CENTRE | wx.ALL, 5)
+        self.tc_qt4i_manage.SetValue(self._settings['qt4i-manage'])
+
+        vertical_box.Add(row_box, 0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+
+        line = wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL)
+        vertical_box.Add(line, 0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP, 5)
+
+        btnsizer = wx.StdDialogButtonSizer()
+
+        btn_apply = wx.Button(self, wx.ID_APPLY)
+        btn_apply.SetToolTip(u"设置生效")
+        btn_apply.SetDefault()
+        btn_apply.Bind(wx.EVT_BUTTON, self.on_apply_settings)
+        btnsizer.AddButton(btn_apply)
+
+        btn_cancel = wx.Button(self, wx.ID_CANCEL)
+        btn_cancel.SetToolTip(u"取消设置")
+        btnsizer.AddButton(btn_cancel)
+        btnsizer.Realize()
+
+        vertical_box.Add(btnsizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+
+        self.SetSizer(vertical_box)
+        vertical_box.Fit(self)
+
+    def on_apply_settings(self, event):
+        config_parser = ConfigParser.ConfigParser()
+        config_parser.read(self._settings_file)
+        config_parser.set("uispy", "qt4i-manage", self.tc_qt4i_manage.GetValue())
+        with open(self._settings_file, 'w') as fd:
+            config_parser.write(fd)

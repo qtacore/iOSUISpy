@@ -16,6 +16,7 @@
 '''
 
 import base64
+import ConfigParser
 from functools import wraps
 import os
 import socket
@@ -24,13 +25,9 @@ import subprocess
 import threading
 
 from rpc.client import RPCClientProxy
+from settings import RESOURCE_PATH
 
 ENCODING = "utf-8"
-QT4I_MANAGE = None
-
-if sys.platform == 'darwin':
-    python_bin_path = os.path.expanduser("~/Library/Python/2.7/bin")
-    QT4I_MANAGE = os.path.join(python_bin_path, 'qt4i-manage')
 
 
 def sync(lockname):
@@ -60,6 +57,7 @@ class HostDriver(object):
         self._host_url = 'http://%s:%s' % (host_ip, host_port)
         self._driver = RPCClientProxy('/'.join([self._host_url, 'host/']), allow_none=True, encoding=ENCODING)
         self._devices = None
+        self._qt4i_manage = None
 
     @property
     def host_url(self):
@@ -68,6 +66,23 @@ class HostDriver(object):
     @property
     def devices(self):
         return self._devices
+
+    @property
+    def qt4i_manage(self):
+        if sys.platform == 'darwin':
+            config_parser = ConfigParser.ConfigParser()
+            settings_file = os.path.join(RESOURCE_PATH, 'uispy.conf')
+            config_parser.read(settings_file)
+            try:
+                self._qt4i_manage = config_parser.get('uispy', 'qt4i-manage')
+            except ConfigParser.NoOptionError:
+                self._qt4i_manage = os.path.expanduser("~/Library/Python/2.7/bin/qt4i-manage")
+                config_parser.set("uispy", "qt4i-manage", self._qt4i_manage)
+                with open(settings_file, 'w') as fd:
+                    config_parser.write(fd)
+            return self._qt4i_manage
+        else:
+            raise Exception("Unsupported platform!")
         
     def connect_to_host(self, driver_type):
         socket.setdefaulttimeout(3)
@@ -89,9 +104,9 @@ class HostDriver(object):
                     subprocess.check_call('killall -9 instruments')
                 xctestagent_path = os.path.join(os.path.expanduser('~'), 'XCTestAgent')
                 if driver_type == 'xctest' and not os.path.exists(xctestagent_path):
-                    unzip_agent_cmd = '%s setup' % QT4I_MANAGE
+                    unzip_agent_cmd = '%s setup' % self.qt4i_manage
                     subprocess.call(unzip_agent_cmd, shell=True)
-                subprocess.call('%s restartdriver -t %s' %  (QT4I_MANAGE, driver_type), shell=True)
+                subprocess.call('%s restartdriver -t %s' % (self.qt4i_manage, driver_type), shell=True)
                 self._driver = RPCClientProxy('/'.join([self.host_url, 'host/']), allow_none=True, encoding=ENCODING)
                 is_connected = self._driver.echo()
             except:
